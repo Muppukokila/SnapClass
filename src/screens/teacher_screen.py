@@ -156,7 +156,7 @@ def teacher_tab_take_attendance():
                             st.write("sid:", sid)
                             st.write("type:", type(sid))
                             try:
-                                student_id = int(sid)
+                                student_id = str(sid)
                             except (ValueError, TypeError):
                                 print("Skipping invalid sid:", sid)
                                 continue
@@ -169,6 +169,9 @@ def teacher_tab_take_attendance():
                     .execute()
 
                 enrolled_students = enrolled_res.data
+                st.write("Selected Subject ID:", selected_subject_id)
+                st.write("Enrolled Students:", enrolled_students)
+                
 
                 # Always initialize these
                 results = []
@@ -183,7 +186,7 @@ def teacher_tab_take_attendance():
                 for node in enrolled_students:
                     student = node["students"]
 
-                    sources = all_detected_ids.get(int(student["id"]), [])
+                    sources = all_detected_ids.get(str(student["id"]), [])
                     is_present = len(sources) > 0
 
                     results.append({
