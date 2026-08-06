@@ -51,11 +51,14 @@ def get_trained_model():
     print("Students from DB:", student_db)
     for student in student_db:
         print(student)
-        embedding = student.get('face_embedding')
+        embedding = student.get("face_embedding")
         print("Embedding:", embedding)
         if embedding:
             X.append(np.array(embedding))
-            y.append(student.get('id'))
+            y.append(student.get("id"))
+
+    print("Total X:", len(X))
+    print("Total y:", len(y))
 
     if len(X) ==0:
         return None
@@ -91,6 +94,8 @@ def predict_attendance(class_image_np):
     y_train = model_data['y']
 
     all_students = sorted(list(set(y_train)))
+    print("y_train:", y_train)
+    print("all_students:", all_students)
 
     for encoding in encodings:
         if len(all_students)>= 2:
