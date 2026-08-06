@@ -48,14 +48,17 @@ def get_trained_model():
     if not student_db:
         return None
     
+    print("Students from DB:", student_db)
     for student in student_db:
+        print(student)
         embedding = student.get('face_embedding')
+        print("Embedding:", embedding)
         if embedding:
             X.append(np.array(embedding))
             y.append(student.get('id'))
 
     if len(X) ==0:
-        return 0
+        return None
     
     clf = SVC(kernel='linear', probability=True, class_weight='balanced')
 
