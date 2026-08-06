@@ -91,9 +91,9 @@ def predict_attendance(class_image_np):
 
     for encoding in encodings:
         if len(all_students)>= 2:
-            predicted_id= int(clf.predict([encoding])[0])
+            predicted_id= clf.predict([encoding])[0]
         else:
-            predicted_id = int(all_students[0])
+            predicted_id = all_students[0]
 
         student_embedding = X_train[y_train.index(predicted_id)]
 
