@@ -16,6 +16,7 @@ def enroll_dialog():
             if res.data:
                 subject = res.data[0]
                 student_id = st.session_state.student_data['id']
+                st.write("Session Student:", st.session_state.student_data)
 
                 check = supabase.table('subject_students').select('*').eq('subject_id', subject['id']).eq('student_id', student_id).execute()
                 if check.data:
