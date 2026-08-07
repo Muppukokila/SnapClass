@@ -32,10 +32,14 @@ from src.components.dialog_enroll import enroll_dialog
 
 
 def student_dashboard():
+
     student_data = st.session_state.student_data
     student_id = student_data["student_id"]
 
-    # Header
+    # -----------------------------
+    # HEADER
+    # -----------------------------
+
     c1, c2 = st.columns(
         2,
         vertical_alignment="center",
@@ -63,7 +67,10 @@ def student_dashboard():
 
     st.space()
 
-    # Enrolled subjects header
+    # -----------------------------
+    # SUBJECT HEADER
+    # -----------------------------
+
     c1, c2 = st.columns(2)
 
     with c1:
@@ -79,15 +86,29 @@ def student_dashboard():
 
     st.divider()
 
-    # Load subjects and attendance
-    with st.spinner("Loading your enrolled subjects..."):
-        subjects = get_student_subjects(student_id)
-        logs = get_student_attendance(student_id)
+    # -----------------------------
+    # LOAD DATA
+    # -----------------------------
 
-    # Calculate attendance statistics
+    with st.spinner("Loading your enrolled subjects..."):
+
+        try:
+            subjects = get_student_subjects(student_id)
+            logs = get_student_attendance(student_id)
+
+        except Exception as e:
+            st.error(f"Unable to load your subjects: {e}")
+            footer_dashboard()
+            return
+
+    # -----------------------------
+    # ATTENDANCE STATISTICS
+    # -----------------------------
+
     stats_map = {}
 
     for log in logs:
+
         sid = log["subject_id"]
 
         if sid not in stats_map:
@@ -101,20 +122,29 @@ def student_dashboard():
         if log.get("is_present"):
             stats_map[sid]["attended"] += 1
 
-    # No subjects
+    # -----------------------------
+    # NO SUBJECTS
+    # -----------------------------
+
     if not subjects:
-        st.info("You are not enrolled in any subjects yet.")
+
+        st.info(
+            "You are not enrolled in any subjects yet."
+        )
+
         footer_dashboard()
         return
 
-    # Display subjects
+    # -----------------------------
+    # DISPLAY SUBJECTS
+    # -----------------------------
+
     cols = st.columns(2)
 
     for i, sub_node in enumerate(subjects):
 
         sub = sub_node.get("subjects")
 
-        # Protect against missing related subject
         if not sub:
             continue
 
@@ -128,11 +158,16 @@ def student_dashboard():
             },
         )
 
+        subject_name = sub["name"]
+        subject_code = sub["subject_code"]
+        subject_section = sub["section"]
+
         def unenroll_button(
             student_id=student_id,
             subject_id=sid,
-            subject_name=sub["name"],
+            subject_name=subject_name,
         ):
+
             if st.button(
                 "Unenroll from this course",
                 type="tertiary",
@@ -140,7 +175,9 @@ def student_dashboard():
                 icon=":material/delete_forever:",
                 key=f"unenroll_{student_id}_{subject_id}",
             ):
+
                 try:
+
                     unenroll_student_to_subject(
                         student_id,
                         subject_id,
@@ -154,15 +191,17 @@ def student_dashboard():
                     st.rerun()
 
                 except Exception as e:
+
                     st.error(
                         f"Unable to unenroll from the course: {e}"
                     )
 
         with cols[i % 2]:
+
             subject_card(
-                name=sub["name"],
-                code=sub["subject_code"],
-                section=sub["section"],
+                name=subject_name,
+                code=subject_code,
+                section=subject_section,
                 stats=[
                     (
                         "📅",
@@ -181,18 +220,32 @@ def student_dashboard():
     footer_dashboard()
 
 
+# ============================================================
+# STUDENT SCREEN
+# ============================================================
+
 def student_screen():
 
-    # Page styling
+    # -----------------------------
+    # PAGE STYLING
+    # -----------------------------
+
     style_background_dashboard()
     style_base_layout()
 
-    # If already logged in
+    # -----------------------------
+    # ALREADY LOGGED IN
+    # -----------------------------
+
     if "student_data" in st.session_state:
+
         student_dashboard()
         return
 
-    # Header
+    # -----------------------------
+    # HEADER
+    # -----------------------------
+
     c1, c2 = st.columns(
         2,
         vertical_alignment="center",
@@ -203,16 +256,21 @@ def student_screen():
         header_dashboard()
 
     with c2:
+
         if st.button(
             "Go back to Home",
             type="secondary",
             key="student_home_btn",
             shortcut="control+backspace",
         ):
+
             st.session_state["login_type"] = None
             st.rerun()
 
-    # Login title
+    # -----------------------------
+    # LOGIN
+    # -----------------------------
+
     st.header(
         "Login using FaceID",
         text_alignment="center",
@@ -223,7 +281,10 @@ def student_screen():
 
     show_registration = False
 
-    # Camera
+    # -----------------------------
+    # CAMERA
+    # -----------------------------
+
     photo_source = st.camera_input(
         "Position your face in the center"
     )
@@ -237,62 +298,81 @@ def student_screen():
         with st.spinner("AI is scanning..."):
 
             try:
-                detected, all_ids, num_faces = predict_attendance(
-                    img
+
+                detected, all_ids, num_faces = (
+                    predict_attendance(img)
                 )
 
             except Exception as e:
+
                 st.error(
                     f"Face recognition failed: {e}"
                 )
+
                 return
 
-            # No face
+            # -----------------------------
+            # NO FACE
+            # -----------------------------
+
             if num_faces == 0:
+
                 st.warning(
                     "Face not found! Please position your face clearly."
                 )
 
-            # Multiple faces
+            # -----------------------------
+            # MULTIPLE FACES
+            # -----------------------------
+
             elif num_faces > 1:
+
                 st.warning(
-                    "Multiple faces found. Please make sure only one person is visible."
+                    "Multiple faces found. "
+                    "Please make sure only one person is visible."
                 )
 
-            # Exactly one face
+            # -----------------------------
+            # ONE FACE
+            # -----------------------------
+
             else:
 
                 if detected:
 
-                    student_id = list(detected.keys())[0]
+                    student_id = list(
+                        detected.keys()
+                    )[0]
 
-                    # Convert ID safely
-                    try:
-                        student_id = int(student_id)
-                    except (ValueError, TypeError):
-                        st.error(
-                            "Invalid student ID detected."
-                        )
-                        return
+                    # -------------------------
+                    # FIND STUDENT
+                    # -------------------------
 
-                    # Get students
                     try:
+
                         all_students = get_all_students()
+
                     except Exception as e:
+
                         st.error(
                             f"Unable to load student records: {e}"
                         )
+
                         return
 
-                    # Find matching student
                     student = next(
                         (
                             s
                             for s in all_students
-                            if int(s["student_id"]) == student_id
+                            if str(s["student_id"])
+                            == str(student_id)
                         ),
                         None,
                     )
+
+                    # -------------------------
+                    # LOGIN
+                    # -------------------------
 
                     if student:
 
@@ -308,21 +388,28 @@ def student_screen():
                         st.rerun()
 
                     else:
-                        st.info(
-                            "Face recognized, but no matching student record was found."
+
+                        st.warning(
+                            "Face recognized, but no matching "
+                            "student record was found."
                         )
+
+                # -------------------------
+                # NEW STUDENT
+                # -------------------------
 
                 else:
 
                     st.info(
-                        "Face not recognized! You might be a new student."
+                        "Face not recognized! "
+                        "You might be a new student."
                     )
 
                     show_registration = True
 
-    # --------------------------------------------------
+    # ========================================================
     # STUDENT REGISTRATION
-    # --------------------------------------------------
+    # ========================================================
 
     if show_registration:
 
@@ -340,12 +427,18 @@ def student_screen():
             )
 
             st.info(
-                "Enroll your voice if you want to use voice-only attendance."
+                "Enroll your voice if you want to use "
+                "voice-only attendance."
             )
+
+            # -----------------------------
+            # VOICE RECORDING
+            # -----------------------------
 
             audio_data = None
 
             try:
+
                 audio_data = st.audio_input(
                     "Record a short phrase like: "
                     "'I am present' or "
@@ -353,12 +446,16 @@ def student_screen():
                 )
 
             except Exception:
+
                 st.warning(
                     "Voice recording is not available. "
                     "You can continue without voice enrollment."
                 )
 
-            # Create account
+            # -----------------------------
+            # CREATE ACCOUNT
+            # -----------------------------
+
             if st.button(
                 "Create Account",
                 type="primary",
@@ -371,6 +468,12 @@ def student_screen():
                         "Please enter your name!"
                     )
 
+                elif photo_source is None:
+
+                    st.error(
+                        "Please capture your face first."
+                    )
+
                 else:
 
                     with st.spinner(
@@ -379,14 +482,20 @@ def student_screen():
 
                         try:
 
-                            # Convert captured image
+                            # -------------------------
+                            # GET IMAGE
+                            # -------------------------
+
                             img = np.array(
                                 Image.open(
                                     photo_source
                                 ).convert("RGB")
                             )
 
-                            # Extract face embedding
+                            # -------------------------
+                            # FACE EMBEDDING
+                            # -------------------------
+
                             encodings = get_face_embeddings(
                                 img
                             )
@@ -394,21 +503,28 @@ def student_screen():
                             if not encodings:
 
                                 st.error(
-                                    "Couldn't capture your facial features. "
-                                    "Please try again with better lighting."
+                                    "Couldn't capture your "
+                                    "facial features. "
+                                    "Please try again with "
+                                    "better lighting."
                                 )
 
                             else:
 
-                                # Face embedding
-                                face_emb = encodings[0].tolist()
+                                face_emb = (
+                                    encodings[0].tolist()
+                                )
 
-                                # Voice embedding
+                                # -------------------------
+                                # VOICE EMBEDDING
+                                # -------------------------
+
                                 voice_emb = None
 
                                 if audio_data:
 
                                     try:
+
                                         voice_emb = (
                                             get_voice_embedding(
                                                 audio_data.read()
@@ -416,37 +532,51 @@ def student_screen():
                                         )
 
                                     except Exception as e:
+
                                         st.warning(
-                                            f"Voice enrollment failed. "
-                                            f"Continuing with face registration. "
-                                            f"Details: {e}"
+                                            "Voice enrollment failed. "
+                                            "Continuing with face registration."
                                         )
 
-                                # Create student
+                                # -------------------------
+                                # CREATE STUDENT
+                                # -------------------------
+
                                 response_data = create_student(
                                     new_name.strip(),
                                     face_embedding=face_emb,
                                     voice_embedding=voice_emb,
                                 )
 
+                                # -------------------------
+                                # SUCCESS
+                                # -------------------------
+
                                 if response_data:
 
-                                    # Retrain classifier
+                                    # Train classifier
                                     try:
+
                                         train_classifier()
+
                                     except Exception as e:
+
                                         st.warning(
-                                            f"Profile created, but face classifier "
+                                            "Profile created, "
+                                            "but face classifier "
                                             f"could not be retrained: {e}"
                                         )
 
-                                    # Login student
+                                    # Login
                                     st.session_state.is_logged_in = True
                                     st.session_state.user_role = "student"
-                                    st.session_state.student_data = response_data[0]
+                                    st.session_state.student_data = (
+                                        response_data[0]
+                                    )
 
                                     st.toast(
-                                        f"Profile Created! Hi {new_name.strip()}!"
+                                        f"Profile Created! "
+                                        f"Hi {new_name.strip()}!"
                                     )
 
                                     time.sleep(1)
@@ -455,7 +585,8 @@ def student_screen():
                                 else:
 
                                     st.error(
-                                        "Student profile could not be created."
+                                        "Student profile "
+                                        "could not be created."
                                     )
 
                         except Exception as e:
@@ -463,5 +594,9 @@ def student_screen():
                             st.error(
                                 f"Unable to create student profile: {e}"
                             )
+
+    # -----------------------------
+    # FOOTER
+    # -----------------------------
 
     footer_dashboard()
