@@ -48,20 +48,14 @@ def get_trained_model():
     if not student_db:
         return None
     
-    print("Students from DB:", student_db)
     for student in student_db:
-        print(student)
-        embedding = student.get("face_embedding")
-        print("Embedding:", embedding)
+        embedding = student.get('face_embedding')
         if embedding:
             X.append(np.array(embedding))
-            y.append(student.get("id"))
-
-    print("Total X:", len(X))
-    print("Total y:", len(y))
+            y.append(student.get('student_id'))
 
     if len(X) ==0:
-        return None
+        return 0
     
     clf = SVC(kernel='linear', probability=True, class_weight='balanced')
 
@@ -94,14 +88,12 @@ def predict_attendance(class_image_np):
     y_train = model_data['y']
 
     all_students = sorted(list(set(y_train)))
-    print("y_train:", y_train)
-    print("all_students:", all_students)
 
     for encoding in encodings:
         if len(all_students)>= 2:
-            predicted_id= clf.predict([encoding])[0]
+            predicted_id= int(clf.predict([encoding])[0])
         else:
-            predicted_id = all_students[0]
+            predicted_id = int(all_students[0])
 
         student_embedding = X_train[y_train.index(predicted_id)]
 
@@ -112,4 +104,3 @@ def predict_attendance(class_image_np):
         if best_match_score <= resemblance_threshold:
             detected_student[predicted_id] = True
     return detected_student, all_students, len(encodings)
-
