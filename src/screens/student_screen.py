@@ -16,7 +16,7 @@ from src.components.subject_card import subject_card
 
 def student_dashboard():
     student_data = st.session_state.student_data
-    student_id = student_data['id']
+    student_id = student_data['student_id']
     c1, c2 = st.columns(2, vertical_alignment='center', gap='xxlarge')
     with c1:
         header_dashboard()
@@ -62,12 +62,12 @@ def student_dashboard():
     cols = st.columns(2)
     for i, sub_node in enumerate(subjects):
         sub = sub_node['subjects']
-        sid = sub['id']
+        sid = sub['subject_id']
 
 
         stats = stats_map.get(sid,{"total":0, "attended": 0} )
         def unenroll_button():
-                if st.button("Unenroll from this course", type='tertiary', width='stretch', icon=':material/delete_forever:'):
+                if st.button("Unenroll from tihs course", type='tertiary', width='stretch', icon=':material/delete_forever:'):
                     unenroll_student_to_subject(student_id, sid)
                     st.toast(f'Unenrolled from {sub['name']} successfully!')
                     st.rerun()
@@ -127,7 +127,7 @@ def student_screen():
                 if detected:
                     student_id = list(detected.keys())[0]
                     all_students = get_all_students()
-                    student = next((s for s in all_students if s['id']==student_id), None)
+                    student = next((s for s in all_students if s['student_id']==student_id), None)
 
                     if student:
                         st.session_state.is_logged_in = True
