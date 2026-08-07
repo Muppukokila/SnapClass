@@ -238,6 +238,14 @@ def student_screen():
     # -----------------------------
 
     if "student_data" in st.session_state:
+        student_data = st.session_state.student_data
+
+        # Reset old/invalid session data
+        if "student_id" not in student_data:
+            del st.session_state["student_data"]
+            st.session_state["is_logged_in"] = False
+            st.session_state["user_role"] = None
+            st.rerun()
 
         student_dashboard()
         return
